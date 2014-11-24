@@ -24,9 +24,19 @@ Plugin 'gmarik/Vundle.vim'
 " Python-mode
 Plugin 'git://github.com/klen/python-mode.git'
 
+" solarized color scheme
+Plugin 'git://github.com/altercation/vim-colors-solarized.git'
+
+
 " All of your Plugins must be added before the following line
 call vundle#end()            " required
 filetype plugin on    " required (removed indent here)
+
+" solarized settings
+set background=dark
+set t_Co=16
+let g:solarized_termcolors=16
+colorscheme solarized
 
 
 autocmd FileType * set tabstop=2|set shiftwidth=2|set noexpandtab

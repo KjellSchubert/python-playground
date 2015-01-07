@@ -12,7 +12,7 @@ def is_approx_equal(a ,b):
   assert b != 0
   return is_approx_1(a / b)
 
-def draw_uniform(event_to_prob):
+def draw_discrete(event_to_prob):
   rand = random.uniform(0, 1)
   prob_sum = 0
   assert(is_approx_1(sum(prob for (event, prob) in event_to_prob.items())))
@@ -26,7 +26,7 @@ def draw_uniform(event_to_prob):
 def test_draw_uniform():
   buckets = {}
   for i in range(0, 100):
-    state = draw_uniform(start_probability)
+    state = draw_discrete(start_probability)
     if not state in buckets:
       buckets[state] = 0
     buckets[state] += 1
@@ -104,12 +104,12 @@ def create_example_hmm():
 # returns tuples (state, observation)
 def generate_observations(hmm, length):
   tuples = []
-  state = draw_uniform(hmm.start_probability)
+  state = draw_discrete(hmm.start_probability)
   for i in range(0, length):
-    observation = draw_uniform(hmm.emission_probability[state])
+    observation = draw_discrete(hmm.emission_probability[state])
     tuples.append( (state, observation) )
     #print("state {} emits {}".format(state, observation))
-    state = draw_uniform(hmm.transition_probability[state])
+    state = draw_discrete(hmm.transition_probability[state])
   return tuples
 
 def test_generate_observations():
@@ -355,8 +355,53 @@ def test_viterbi(observation_count):
     max_posterior_state = max(posteriors[i].items(), key = lambda item: item[1])
     doStatesDiffer = max_posterior_state[0] != viterbi_path[i]
     print("  ", observation_seq[i], tuples[i][0], viterbi_path[i], max_posterior_state, "***" if doStatesDiffer else "")
- 
+
+
+def init_random_hmm(states, observations):
+
+  # return dict {elems[0]: random, elem[1]: random, ...} with values adding to 1.0
+  def init_random_dict(elems):
+    random_values = [random.uniform(0.001, 1) for i in range(len(elems))]
+    random_value_sum = sum(random_values)
+    assert random_value_sum != 0 # bad luck otherwise :)
+    return dict((elems[i], random_values[i] / random_value_sum) for i in range(len(elems)))
+
+  start_probability = init_random_dict(states)
+  transition_probability = dict((state, init_random_dict(states)) for state in states)
+  emission_probability = dict((state, init_random_dict(observations)) for state in states)
+  return Hmm(states, observations, start_probability, transition_probability, emission_probability)
+
+def baum_welch(states, observations, observation_seqs):
+  hmm = init_random_hmm(states, observations)
+  for iteration in range(0, 10): # 10 is pretty arbitrary
+
+    for observation_seq in observation_seqs:
+      pdb.set_trace()
+      (alphas, betas, posteriors) = forward_backward_algorithm(hmm, observation_seq)
+
+      # update emission_probs given posteriors
+      TODO, see http://en.wikipedia.org/wiki/Baum%E2%80%93Welch_algorithm
+
+  return hmm
+
+def test_baum_welch():
+
+  # create an hmm to emit train data
+  hmm = create_example_hmm()
+  train_data_length = 10
+  train_data_count = 100
+
+  def get_observations(tuples):
+    return [observation for (state, observation) in tuples]
+
+  train_data = [get_observations(generate_observations(hmm, train_data_length)) for i in range(train_data_count)]
+
+  baum_welch(hmm.states, hmm.observations, train_data)
+
+  #xxx TODO: build hmm with a different hidden state set but trying to explain the same observations
+
 test_scoring(3)
 
 test_viterbi(6)
 
+test_baum_welch()
